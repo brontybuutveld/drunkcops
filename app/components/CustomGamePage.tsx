@@ -266,26 +266,26 @@ export function CustomGamePage({ gameConfig }: { gameConfig: GameConfig }) {
 
   const loadGame = (seed: number) => {
     if (!initalEngineState || typeof window === "undefined") return;
-    // const worker = new Worker(new URL("../workers/worker.ts", import.meta.url), { type: "module"});
-    // const state = {...initalEngineState, seed}
-    // const message = {
-    //   type: 'e',
-    //   state,
-    //   robberStrategy,
-    //   copStrategy,
-    //   matrixMode: true,
-    //   matrix: robberMatrix
-    // }
-    // worker.postMessage(message);
-    // console.log('sending seed')
-    // worker.onmessage = (e) => {
-    //   if (e.data.type === 's') {
-    //     setCurrentGame(e.data.game);
+    const worker = new Worker(new URL("../workers/worker.ts", import.meta.url), { type: "module"});
+    const state = {...initalEngineState, seed}
+    const message = {
+      type: 'e',
+      state,
+      robberStrategy,
+      copStrategy,
+      matrixMode: true,
+      matrix: robberMatrix
+    }
+    worker.postMessage(message);
+    console.log('sending seed')
+    worker.onmessage = (e) => {
+      if (e.data.type === 's') {
+        setCurrentGame(e.data.game);
         
-    //     console.log(e.data.game)
-    //     worker.terminate();
-    //   }
-    // }
+        console.log(e.data.game)
+        worker.terminate();
+      }
+    }
   }
 
   const generateItemJsx = (res: RunResult[]) => {
@@ -617,7 +617,7 @@ export function CustomGamePage({ gameConfig }: { gameConfig: GameConfig }) {
     editorRef.current = editor;
     console.log('mount')
     monaco.languages.typescript.typescriptDefaults.addExtraLib(
-      `const url:string = url;
+      `const url: string = url;
       const setResultsRaw: React.Dispatch<React.SetStateAction<RunResult[]>> = setResultsRaw;
       const setResults: React.Dispatch<React.SetStateAction<RunResult[]>> = setResults;
       const setResultsAsc: React.Dispatch<React.SetStateAction<RunResult[]>> = setResultsAsc;
@@ -698,17 +698,20 @@ export function CustomGamePage({ gameConfig }: { gameConfig: GameConfig }) {
   const runCode = () => {
     if (!editorRef.current) return;
     const url = import.meta.url;
+    console.log(url);
     setResultsRaw(undefined);
     setResults(undefined);
     setResultsAsc(undefined);
     setResultsDesc(undefined);
     setPerformance("");
     setMasterSeed(undefined);
+    const workerOut = new Worker(new URL("../workers/worker.ts", url), { type: "module"});
+    console.log(workerOut);
 
     let s = editorRef.current.getValue() ?? '';
 
     s += `
-const worker = new Worker(new URL("../workers/worker.ts", url), { type: "module"});
+const worker = workerOut;
 const rs = ts.transpileModule(robberStrategy.toString(), {
   compilerOptions: {
     target: ts.ScriptTarget.ES2020,
